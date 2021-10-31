@@ -6,20 +6,116 @@ import (
 )
 
 const (
-	_ = iota
-	matchStrategyValuesOnly
-	matchStrategyFieldsOnly
-	matchStrateguFieldWithValues
+	opAnd = iota
+	opOr
 )
 
-// GetFieldDescription returns the description for a fields validation
-func GetFieldDescription(validation string, value string) string {
-	if desc, ok := bakedIn[validation]; ok {
-		if value == "" {
-			return desc
-		}
+func getOpName(op int) string {
+	if op == opAnd {
+		return "and"
+	} else if op == opOr {
+		return "or"
+	}
 
-		return fmt.Sprintf(desc, value)
+	panic("unknown operator")
+}
+
+type Documentor interface {
+	GetRuleDescription(value string) string
+}
+
+type RuleWithoutValue struct {
+	Documentor
+	DescTemplate string
+}
+
+func (r RuleWithoutValue) GetRuleDescription(value string) string {
+	return r.DescTemplate
+}
+
+type RuleWithValue struct {
+	Documentor
+	DescTemplate string
+}
+
+func (r RuleWithValue) GetRuleDescription(value string) string {
+	return fmt.Sprintf(r.DescTemplate, value)
+}
+
+type RuleWithField struct {
+	Documentor
+	DescTemplate string
+	Op           int
+}
+
+func (r RuleWithField) GetRuleDescription(value string) string {
+	spaceSeparated := splitValue(value)
+
+	var fields []string
+	for _, field := range spaceSeparated {
+		fields = append(fields, field)
+	}
+
+	var v string
+	if len(fields) > 1 {
+		x, fields := fields[len(fields)-1], fields[:len(fields)-1] // pop stack
+		v = strings.Join(fields, ", ")
+		if r.Op == opAnd {
+			v = fmt.Sprintf("%s and %s", v, string(x))
+		} else {
+			v = fmt.Sprintf("%s or %s", v, string(x))
+		}
+	} else {
+		v = strings.Join(fields, ", ")
+	}
+
+	return fmt.Sprintf(r.DescTemplate, v)
+}
+
+type RuleWithFieldValue struct {
+	Documentor
+	DescTemplate string
+	Op           int
+}
+
+func (r RuleWithFieldValue) GetRuleDescription(value string) string {
+	spaceSeparated := splitValue(value)
+
+	v := spaceSeparated[0]
+	if len(spaceSeparated) > 1 {
+		var values []string
+		for _, chunk := range chunkSlice(spaceSeparated, 2) {
+			values = append(values, strings.Join(chunk, "="))
+		}
+		if len(values) > 1 {
+			x, values := values[len(values)-1], values[:len(values)-1] // pop stack
+			v = strings.Join(values, ", ")
+			if r.Op == opAnd {
+				v = fmt.Sprintf("%s and %s", v, string(x))
+			} else {
+				v = fmt.Sprintf("%s or %s", v, string(x))
+			}
+		} else {
+			v = strings.Join(values, ", ")
+		}
+	}
+
+	return fmt.Sprintf(r.DescTemplate, v)
+}
+func splitValue(value string) []string {
+	quoted := false
+	return strings.FieldsFunc(value, func(r rune) bool {
+		if r == '"' || r == '\'' {
+			quoted = !quoted
+		}
+		return !quoted && r == ' '
+	})
+}
+
+// GetFieldDescription returns the description for a fields validation
+func GetFieldDescription(rule string, value string) string {
+	if documentor, ok := bakedIn[rule]; ok {
+		return documentor.GetRuleDescription(value)
 	}
 
 	return ""
@@ -35,32 +131,19 @@ func GetFieldDocs(rules string) (ret []string) {
 
 	for _, rule := range separatedRules {
 		separatedRule := strings.Split(rule, "=")
-		r := separatedRule[0]
-		fmt.Println(r)
-		var v string
-		if len(separatedRule) > 1 {
-			v = separatedRule[1]
 
-			quoted := false
-			spaceSeparated := strings.FieldsFunc(v, func(r rune) bool {
-				if r == '"' || r == '\'' {
-					quoted = !quoted
-				}
-				return !quoted && r == ' '
-			})
+		if r, ok := bakedIn[separatedRule[0]]; ok {
 
-			// If 2 or more values, it must be "FieldN valueN ..." e.g. "required_if=Field value"
-			if len(spaceSeparated) > 1 {
-				var values []string
-				for _, chunk := range chunkSlice(spaceSeparated, 2) {
-					values = append(values, strings.Join(chunk, "="))
-				}
-				v = strings.Join(values, ", ")
+			if len(separatedRule) > 1 {
+				ret = append(ret, r.GetRuleDescription(separatedRule[1]))
+				continue
 			}
-		}
 
-		ret = append(ret, GetFieldDescription(r, v))
+			ret = append(ret, r.GetRuleDescription(""))
+		}
 	}
+
+	fmt.Printf("%#v\n", ret)
 
 	return ret
 }
