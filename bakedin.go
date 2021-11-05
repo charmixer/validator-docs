@@ -1,4 +1,4 @@
-package docs
+package vdocs
 
 var (
 	bakedIn = map[string]Documentor{

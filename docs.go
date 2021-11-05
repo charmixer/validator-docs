@@ -1,4 +1,4 @@
-package docs
+package vdocs
 
 import (
 	"fmt"
