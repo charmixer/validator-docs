@@ -20,6 +20,12 @@ func getOpName(op int) string {
 	panic("unknown operator")
 }
 
+type Validation struct {
+	Descriptions []string
+	Required     bool
+	Format       string
+}
+
 type Documentor interface {
 	GetRuleDescription(value string) string
 }
@@ -121,29 +127,48 @@ func GetFieldDescription(rule string, value string) string {
 	return ""
 }
 
-// GetFieldDocs returns docs given a string of validation rules
-func GetFieldDocs(rules string) (ret []string) {
+// GetFieldDocs returns docs given validation rules for given string of rules (validation tag)
+func GetFieldDocs(rules string) Validation {
 	if rules == "" {
-		return nil
+		return Validation{}
 	}
 
 	separatedRules := strings.Split(rules, ",")
 
+	var descriptions []string
+	var required bool
+	var format string
 	for _, rule := range separatedRules {
 		separatedRule := strings.Split(rule, "=")
 
-		if r, ok := bakedIn[separatedRule[0]]; ok {
+		name := separatedRule[0]
+
+		if r, ok := bakedIn[name]; ok {
 
 			if len(separatedRule) > 1 {
-				ret = append(ret, r.GetRuleDescription(separatedRule[1]))
+				descriptions = append(descriptions, r.GetRuleDescription(separatedRule[1]))
 				continue
 			}
 
-			ret = append(ret, r.GetRuleDescription(""))
+			descriptions = append(descriptions, r.GetRuleDescription(""))
+
+			if name == "required" {
+				required = true
+			}
+
+			if _, ok := r.(RuleWithoutValue); ok {
+				if name != "required" && name != "isdefault" {
+					format = name
+				}
+			}
 		}
 	}
 
-	return ret
+	return Validation{
+		Descriptions: descriptions,
+		Required:     required,
+		Format:       format,
+	}
 }
 
 func chunkSlice(slice []string, chunkSize int) [][]string {

@@ -33,8 +33,8 @@ func TestRuleWithoutValue(t *testing.T) {
 		testname := fmt.Sprintf("%s", tt.rule)
 		t.Run(testname, func(t *testing.T) {
 			got := GetFieldDocs(tt.rule)
-			if tt.want != got[0] {
-				t.Errorf(`got "%s", want "%s"`, got[0], tt.want)
+			if tt.want != got.Descriptions[0] {
+				t.Errorf(`got "%s", want "%s"`, got.Descriptions[0], tt.want)
 			}
 		})
 	}
@@ -72,8 +72,8 @@ func TestRuleWithField(t *testing.T) {
 		testname := fmt.Sprintf("%s", tt.rule)
 		t.Run(testname, func(t *testing.T) {
 			got := GetFieldDocs(tt.rule)
-			if tt.want != got[0] {
-				t.Errorf(`got "%s", want "%s"`, got[0], tt.want)
+			if tt.want != got.Descriptions[0] {
+				t.Errorf(`got "%s", want "%s"`, got.Descriptions[0], tt.want)
 			}
 		})
 	}
@@ -123,8 +123,8 @@ func TestRuleWithFieldValue(t *testing.T) {
 		testname := fmt.Sprintf("%s", tt.rule)
 		t.Run(testname, func(t *testing.T) {
 			got := GetFieldDocs(tt.rule)
-			if tt.want != got[0] {
-				t.Errorf(`got "%s", want "%s"`, got[0], tt.want)
+			if tt.want != got.Descriptions[0] {
+				t.Errorf(`got "%s", want "%s"`, got.Descriptions[0], tt.want)
 			}
 		})
 	}
@@ -153,8 +153,8 @@ func TestFieldWithValuesRules(t *testing.T) {
 		testname := fmt.Sprintf("%s", tt.rule)
 		t.Run(testname, func(t *testing.T) {
 			got := GetFieldDocs(tt.rule)
-			if tt.want != got[0] {
-				t.Errorf(`got "%s", want "%s"`, got[0], tt.want)
+			if tt.want != got.Descriptions[0] {
+				t.Errorf(`got "%s", want "%s"`, got.Descriptions[0], tt.want)
 			}
 		})
 	}
