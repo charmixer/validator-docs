@@ -143,8 +143,6 @@ func GetFieldDocs(rules string) (ret []string) {
 		}
 	}
 
-	fmt.Printf("%#v\n", ret)
-
 	return ret
 }
 
